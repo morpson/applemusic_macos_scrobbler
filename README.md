@@ -1,8 +1,10 @@
 <style>
   .icon-img {
-	width: 268px;
-	height: auto;
-	max-height: 268px;
+    width: 268px;
+    height: 268px;
+    min-width: 120px;
+    min-height: 120px;
+    object-fit: contain;
   }
 </style>
 
