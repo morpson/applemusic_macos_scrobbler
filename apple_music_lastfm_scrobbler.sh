@@ -11,9 +11,10 @@ SESSION_KEY=""  # Your Last.fm session key
 
 LOG_FILE="$HOME/Library/Logs/apple_music_lastfm_scrobbler.log"
 CACHE_FILE="$HOME/.apple_music_lastfm_scrobbler_cache"
-POLL_INTERVAL=10
+POLL_INTERVAL=30  # Seconds between checking for track changes (can be adjusted)
 MIN_PLAY_TIME=30
 DEBUG=false
+USE_KEYCHAIN=false
 
 # ===== UTILITIES =====
 log() {
@@ -27,14 +28,28 @@ log() {
 }
 
 md5() {
-    echo -n "$1" | md5sum | cut -d ' ' -f 1
+    if command -v md5sum >/dev/null 2>&1; then
+        # Linux systems with md5sum
+        echo -n "$1" | md5sum | cut -d ' ' -f 1
+    else
+        # macOS uses md5 -q
+        echo -n "$1" | md5 -q
+    fi
 }
 
 urlencode() {
-    local length=${#1}
-    for (( i = 0; i < length; i++ )); do
-        c="${1:$i:1}"
-        [[ "$c" =~ [a-zA-Z0-9.~_-] ]] && printf "$c" || printf '%%%02X' "'$c"
+    local string="$1"
+    # Use LC_CTYPE=C to ensure we're working with bytes not characters
+    LC_CTYPE=C
+    
+    # Replace special characters with URL encoding
+    # This sed approach is much faster than byte-by-byte processing
+    echo -n "$string" | sed -e 's/[^a-zA-Z0-9.~_-]/\\&/g' | while read -n1 c; do
+        if [[ "$c" =~ [a-zA-Z0-9.~_-] ]]; then
+            printf "%c" "$c"
+        else
+            printf "%%%02X" "'$c"
+        fi
     done
     echo
 }
@@ -47,6 +62,38 @@ create_signature() {
     for param in "${sorted[@]}"; do string+="${param}"; done
     string+="${API_SECRET}"
     md5 "$string"
+}
+
+check_api_response() {
+    local response="$1"
+    local action="$2"
+    
+    if echo "$response" | grep -q "status=\"ok\""; then
+        return 0
+    else
+        local error_code=$(echo "$response" | grep -o "code=\"[0-9]*\"" | grep -o "[0-9]*")
+        local error_message=$(echo "$response" | grep -o "<error[^>]*>.*</error>" | 
+                             sed 's/<error[^>]*>\(.*\)<\/error>/\1/')
+        
+        case "$error_code" in
+            4)
+                log "ERROR" "❌ Authentication failed: Invalid API key"
+                ;;
+            9)
+                log "ERROR" "❌ Authentication failed: Invalid session key"
+                ;;
+            11|16)
+                log "ERROR" "❌ Service error: Last.fm service is temporarily unavailable"
+                ;;
+            13)
+                log "ERROR" "❌ Authentication failed: Invalid method signature"
+                ;;
+            *)
+                log "ERROR" "❌ $action failed: $error_message (code: $error_code)"
+                ;;
+        esac
+        return 1
+    fi
 }
 
 scrobble_track() {
@@ -80,14 +127,38 @@ duration${duration}"
     [[ -n "$duration" ]] && post_data+="&duration=$duration_enc"
 
     local response=$(curl -s -d "$post_data" "https://ws.audioscrobbler.com/2.0/")
-    if echo "$response" | grep -q "status=\"ok\""; then
+    if check_api_response "$response" "Scrobble"; then
         log "INFO" "✅ Scrobbled: $artist - $track"
         echo "$artist - $track - $timestamp" >> "$CACHE_FILE"
         return 0
     else
-        log "ERROR" "❌ Scrobble failed: $response"
         return 1
     fi
+}
+
+try_scrobble() {
+    local artist="$1"
+    local title="$2"
+    local timestamp="$3"
+    local album="$4"
+    local duration="$5"
+    local elapsed="$6"
+    local threshold="$7"
+    
+    if [[ -z "$artist" || -z "$title" ]]; then
+        return 1
+    fi
+    
+    # Check if track has played long enough
+    if (( elapsed >= threshold && elapsed >= MIN_PLAY_TIME )); then
+        if should_scrobble "$artist" "$title" "$timestamp"; then
+            scrobble_track "$artist" "$title" "$timestamp" "$album" "$duration" && return 0
+        fi
+    else
+        log "DEBUG" "Not scrobbling: $elapsed s < $threshold s"
+    fi
+    
+    return 1
 }
 
 is_music_running() {
@@ -130,6 +201,23 @@ cleanup() {
     exit 0
 }
 
+load_credentials_from_keychain() {
+    log "INFO" "Attempting to load credentials from macOS Keychain..."
+    
+    # Try to load credentials from keychain
+    API_KEY=$(security find-generic-password -a "lastfm_api_key" -s "com.user.applemusic_lastfm_scrobbler" -w 2>/dev/null)
+    API_SECRET=$(security find-generic-password -a "lastfm_api_secret" -s "com.user.applemusic_lastfm_scrobbler" -w 2>/dev/null)
+    SESSION_KEY=$(security find-generic-password -a "lastfm_session_key" -s "com.user.applemusic_lastfm_scrobbler" -w 2>/dev/null)
+    
+    if [[ -z "$API_KEY" || -z "$API_SECRET" || -z "$SESSION_KEY" ]]; then
+        log "ERROR" "Failed to load credentials from keychain"
+        return 1
+    fi
+    
+    log "INFO" "Successfully loaded credentials from keychain"
+    return 0
+}
+
 # ===== MAIN =====
 trap cleanup SIGINT SIGTERM
 touch "$LOG_FILE" "$CACHE_FILE"
@@ -139,6 +227,9 @@ LAST_TITLE="" LAST_ARTIST="" LAST_ALBUM="" LAST_DURATION=0
 TRACK_START_TIME=0 TRACK_TIMESTAMP=0 SCROBBLED=false
 
 log "INFO" "🎵 Apple Music Last.fm scrobbler started"
+if [[ "$USE_KEYCHAIN" == "true" ]]; then
+    load_credentials_from_keychain || log "WARNING" "Failed to load from keychain, will use credentials from script"
+fi
 [[ -z "$API_KEY" || -z "$API_SECRET" || -z "$SESSION_KEY" ]] && log "ERROR" "API credentials missing" && exit 1
 
 while true; do
@@ -150,13 +241,7 @@ while true; do
                 THRESHOLD=$((LAST_DURATION / 2))
                 (( THRESHOLD > 240 )) && THRESHOLD=240
 
-                if (( ELAPSED >= THRESHOLD && ELAPSED >= MIN_PLAY_TIME )); then
-                    if should_scrobble "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP"; then
-                        scrobble_track "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP" "$LAST_ALBUM" "$LAST_DURATION" && SCROBBLED=true
-                    fi
-                else
-                    log "INFO" "Skipped: $ELAPSED s < $THRESHOLD s"
-                fi
+                try_scrobble "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP" "$LAST_ALBUM" "$LAST_DURATION" "$ELAPSED" "$THRESHOLD" && SCROBBLED=true
             fi
 
             LAST_TITLE="$CURRENT_TITLE"
@@ -172,13 +257,8 @@ while true; do
             ELAPSED=$((NOW - TRACK_START_TIME))
             THRESHOLD=$((CURRENT_DURATION / 2))
             (( THRESHOLD > 240 )) && THRESHOLD=240
-            if (( ELAPSED >= THRESHOLD && ELAPSED >= MIN_PLAY_TIME )); then
-                if should_scrobble "$CURRENT_ARTIST" "$CURRENT_TITLE" "$TRACK_TIMESTAMP"; then
-                    scrobble_track "$CURRENT_ARTIST" "$CURRENT_TITLE" "$TRACK_TIMESTAMP" "$CURRENT_ALBUM" "$CURRENT_DURATION" && SCROBBLED=true
-                fi
-            else
-                log "DEBUG" "Still playing: $ELAPSED/$THRESHOLD seconds"
-            fi
+            
+            try_scrobble "$CURRENT_ARTIST" "$CURRENT_TITLE" "$TRACK_TIMESTAMP" "$CURRENT_ALBUM" "$CURRENT_DURATION" "$ELAPSED" "$THRESHOLD" && SCROBBLED=true
         fi
     else
         if [[ -n "$LAST_TITLE" && "$SCROBBLED" == "false" ]]; then
@@ -187,12 +267,10 @@ while true; do
             THRESHOLD=$((LAST_DURATION / 2))
             (( THRESHOLD > 240 )) && THRESHOLD=240
 
-            if (( ELAPSED >= THRESHOLD && ELAPSED >= MIN_PLAY_TIME )); then
-                if should_scrobble "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP"; then
-                    scrobble_track "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP" "$LAST_ALBUM" "$LAST_DURATION" && SCROBBLED=true
-                fi
-            else
+            if ! try_scrobble "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP" "$LAST_ALBUM" "$LAST_DURATION" "$ELAPSED" "$THRESHOLD"; then
                 log "INFO" "Stopped: Not enough time played"
+            else
+                SCROBBLED=true
             fi
 
             LAST_TITLE="" LAST_ARTIST="" LAST_ALBUM="" SCROBBLED=false

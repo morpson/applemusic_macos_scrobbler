@@ -13,7 +13,7 @@ This tool automatically scrobbles your currently playing Apple Music tracks to [
 * macOS with Apple Music app
 * A Last.fm account
 * [Last.fm API account](https://www.last.fm/api/account/create) (to obtain your API key & secret)
-* Command line tools: `bash`, `osascript`, `curl`, `md5sum` (via `coreutils` or `brew install coreutils` if needed)
+* Command line tools: `bash`, `osascript`, `curl`, and one of `md5sum` (via `coreutils`) or `md5` (native on macOS)
 
 ---
 
@@ -23,24 +23,32 @@ This tool automatically scrobbles your currently playing Apple Music tracks to [
 
 ```bash
 git clone https://github.com/morpson/applemusic_macos_scrobbler.git
-cd apple-music-lastfm-scrobbler
+cd applemusic_macos_scrobbler
 ```
 
 2. **Install the scrobbler script:**
 
-This script runs every 60 seconds and checks the currently playing track in Apple Music.
+You can install the script either in your home directory or keep it in the cloned repository:
 
 ```bash
+# Option 1: Install to home directory (recommended for regular use)
 cp apple_music_lastfm_scrobbler.sh ~/
 chmod +x ~/apple_music_lastfm_scrobbler.sh
+
+# Option 2: Keep it in the repository (easier for development)
+chmod +x ./apple_music_lastfm_scrobbler.sh
 ```
 
 3. **Install the launch agent:**
+
+The launch agent makes the scrobbler start automatically when you log in:
 
 ```bash
 mkdir -p ~/Library/LaunchAgents
 cp com.user.apple_music_lastfm_scrobbler.plist ~/Library/LaunchAgents/
 ```
+
+> **Note:** If you chose Option 2 in step 2, you'll need to edit the plist file to point to the correct script location.
 
 ---
 
@@ -82,7 +90,33 @@ Then run:
 ./update_scrobbler_credentials.sh
 ```
 
-It will prompt you for these values and update `~/apple_music_lastfm_scrobbler.sh` accordingly.
+It will prompt you for these values and update the scrobbler script accordingly.
+
+---
+
+### 🔒 Option 3: Secure Credentials Storage (Enhanced Security)
+
+For enhanced security, you can store your Last.fm API credentials in the macOS Keychain rather than directly in the script:
+
+```bash
+chmod +x ./secure_credentials.sh
+./secure_credentials.sh store
+```
+
+This will:
+
+* Prompt you for your **API key**, **API secret**, and **session key**
+* Store all credentials securely in the macOS Keychain
+* Update the scrobbler script to load credentials from the Keychain
+* No sensitive information will be stored in the script file itself
+
+To verify your credentials are properly stored and accessible:
+
+```bash
+./secure_credentials.sh test
+```
+
+If you want to revert back to storing credentials in the script file, set `USE_KEYCHAIN=false` in the script and run the update_scrobbler_credentials.sh script to set them directly.
 
 ---
 
@@ -112,7 +146,7 @@ Play a track in Apple Music. Then check the logs:
 tail -f ~/Library/Logs/apple_music_lastfm_scrobbler.log
 ```
 
-You should see output indicating the currently playing track and scrobble status.
+You should see output indicating the currently playing track and scrobble status. The script checks for new tracks every 30 seconds by default. You can adjust this interval by changing the `POLL_INTERVAL` value in the script if you prefer more or less frequent checks.
 
 ---
 
@@ -130,7 +164,9 @@ rm ~/apple_music_lastfm_scrobbler.sh
 
 ## 🔒 Security Note
 
-Do **not** share your API key, API secret, or session key publicly. The scripts are now designed to prompt for your credentials securely — no sensitive data is stored in version control.
+Do **not** share your API key, API secret, or session key publicly. The scripts are designed to prompt for your credentials securely — no sensitive data is stored in version control.
+
+For even better security, consider storing your credentials in the macOS Keychain instead of directly in the script.
 
 ---
 
