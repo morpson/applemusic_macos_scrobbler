@@ -18,7 +18,7 @@ This tool automatically scrobbles your currently playing Apple Music tracks to [
 1. **Clone the repository:**
 
 ```bash
-git clone https://github.com/morpson/apple-music-lastfm-scrobbler.git
+git clone https://github.com/morpson/applemusic_macos_scrobbler.git
 cd apple-music-lastfm-scrobbler
 ```
 
