@@ -8,9 +8,11 @@
   }
 </style>
 
-<div style="display: flex; align-items: center; margin-bottom: 20px;">
-  <img src="assets/icon.png" width="268" style="margin-right: 20px" alt="Apple Music Scrobbler Icon">
-  <h1>Apple Music to Last.fm - macOS Scrobbler</h1>
+<div style="display: grid; grid-template-columns: auto 1fr; gap: 20px; margin-bottom: 30px;">
+  <img src="assets/icon.png" width="268" alt="Apple Music Scrobbler Icon">
+  <div style="align-self: center;">
+    <h1 style="margin: 0;">Apple Music to Last.fm - macOS Scrobbler</h1>
+  </div>
 </div>
 
 This tool automatically scrobbles your currently playing Apple Music tracks to [Last.fm](https://www.last.fm). It runs in the background on macOS using AppleScript and a `launchd` service.
