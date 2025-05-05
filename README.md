@@ -1,6 +1,6 @@
 # 🎵 Apple Music to Last.fm - macOS Scrobbler
 
-<p align="center">
+<p align="left">
   <img src="assets/icon.png" width="128" height="128" alt="Apple Music Scrobbler Icon">
 </p>
 
