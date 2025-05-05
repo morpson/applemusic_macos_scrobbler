@@ -1,5 +1,5 @@
-<div style="display: grid; grid-template-columns: 232px 1fr; align-items: center; gap: 20px; margin-bottom: 30px; max-width: 100%;">
-  <img src="assets/icon.png" width="268" alt="Apple Music Scrobbler Icon" style="max-width: 100%;">
+<div style="display: grid; grid-template-columns: minmax(268px, auto) 1fr; align-items: center; gap: 20px; margin-bottom: 30px; max-width: 100%; min-width: 600px;">
+  <img src="assets/icon.png" width="268" alt="Apple Music Scrobbler Icon" style="max-width: 100%; width: 268px;">
   <h1 style="margin: 0;">Apple Music to Last.fm - macOS Scrobbler</h1>
 </div>
 
