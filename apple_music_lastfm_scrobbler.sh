@@ -22,9 +22,9 @@
 
 # ===== CONFIGURATION SECTION =====
 # Last.fm API credentials - YOU MUST FILL THESE IN
-API_KEY="256030787c8f6f3446004688dd1e6ded"      # Your Last.fm API key
-API_SECRET="28e59e4f6b03c1e772be0d861b049ac2"   # Your Last.fm API shared secret
-SESSION_KEY="zlJlNUcNfK2vm3-Wkb7WjoBPP5oX3lcy"  # Your Last.fm session key
+API_KEY=""      # Your Last.fm API key
+API_SECRET=""   # Your Last.fm API shared secret
+SESSION_KEY=""  # IXhG8wUsDJ5CZEQf8qgVDcIAYoUjhry3
 
 # Configuration options
 LOG_FILE="$HOME/Library/Logs/apple_music_lastfm_scrobbler.log"

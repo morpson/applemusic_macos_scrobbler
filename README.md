@@ -19,7 +19,13 @@ A bash script that automatically scrobbles tracks played in Apple Music to Last.
 
 ## Installation
 
-1. Clone or download this repository
+1. Clone this repository:
+
+```bash
+git clone https://github.com/morpson/applemusic_macos_scrobbler.git
+cd applemusic_macos_scrobbler
+```
+
 2. Get your Last.fm API credentials:
    - Register for a Last.fm API account at <https://www.last.fm/api/account/create>
    - Note down your API key and API secret
@@ -32,7 +38,13 @@ chmod +x get_session_key.sh update_credentials.sh apple_music_lastfm_scrobbler.s
 ./update_credentials.sh
 ```
 
-4. Create the LaunchAgent to run on startup:
+4. Copy the script to your home directory:
+
+```bash
+cp apple_music_lastfm_scrobbler.sh ~/
+```
+
+5. Create the LaunchAgent to run on startup:
 
 ```bash
 mkdir -p ~/Library/LaunchAgents
@@ -53,12 +65,14 @@ cat > ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist << EOF
     <true/>
     <key>StandardOutPath</key>
     <string>$HOME/Library/Logs/apple_music_lastfm_scrobbler.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/Library/Logs/apple_music_lastfm_scrobbler.error.log</string>
 </dict>
 </plist>
 EOF
 ```
 
-5. Load the LaunchAgent:
+6. Load the LaunchAgent:
 
 ```bash
 launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
