@@ -1,13 +1,3 @@
-<style>
-  .icon-img {
-    width: 268px;
-    height: 268px;
-    min-width: 120px;
-    min-height: 120px;
-    object-fit: contain;
-  }
-</style>
-
 <div style="display: grid; grid-template-columns: auto 1fr; gap: 20px; margin-bottom: 30px;">
   <img src="assets/icon.png" width="268" alt="Apple Music Scrobbler Icon">
   <div style="align-self: center;">
