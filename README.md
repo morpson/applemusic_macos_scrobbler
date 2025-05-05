@@ -1,6 +1,14 @@
+<style>
+  .icon-img {
+	width: 268px;
+	height: auto;
+	max-height: 268px;
+  }
+</style>
+
 <table style="border: none;">
 <tr>
-<td><img src="assets/icon.png" style="width: 300px; height: 264px; object-fit: contain;" alt="Apple Music Scrobbler Icon"></td>
+<td><img src="assets/icon.png" class="icon-img" alt="Apple Music Scrobbler Icon"></td>
 <td><h1>Apple Music to Last.fm - macOS Scrobbler</h1></td>
 </tr>
 </table>
