@@ -1,26 +1,25 @@
 #!/bin/bash
 
-API_KEY="256030787c8f6f3446004688dd1e6ded"
-API_SECRET="28e59e4f6b03c1e772be0d861b049ac2"
 SCRIPT_PATH="$HOME/apple_music_lastfm_scrobbler.sh"
 
 echo "==== Last.fm Session Key Generator ===="
 echo ""
-echo "We'll help you get a session key for your Last.fm scrobbler."
+read -p "Enter your Last.fm API key: " API_KEY
+read -p "Enter your Last.fm API secret: " API_SECRET
+
+if [[ -z "$API_KEY" || -z "$API_SECRET" ]]; then
+    echo "Both API key and secret are required."
+    exit 1
+fi
+
 echo ""
 echo "Step 1: Open this URL in your browser:"
 echo "https://www.last.fm/api/auth/?api_key=${API_KEY}&cb=http://localhost"
 echo ""
-echo "Step 2: Log in to Last.fm if necessary and authorize the application"
+echo "Step 2: Log in to Last.fm and authorize the app."
+echo "Step 3: After being redirected to localhost, copy the 'token' from the URL."
 echo ""
-echo "Step 3: After authorization, you'll be redirected to a page that won't load (localhost)"
-echo "        Look in your browser's address bar for something like:"
-echo "        http://localhost/?token=XXXXXXXXXXXXXXX"
-echo ""
-echo "Step 4: Copy the token from the URL (the part after 'token=')"
-echo ""
-echo -n "Enter the token from your browser: "
-read TOKEN
+read -p "Enter the token from the URL: " TOKEN
 
 if [ -z "$TOKEN" ]; then
     echo "No token provided. Please try again."
@@ -44,24 +43,22 @@ if [ -n "$SESSION_KEY" ]; then
     echo "Success! Your session key is: $SESSION_KEY"
     echo ""
     echo "Updating your scrobbler script..."
-    
-    # Make a backup of the original script
+
     cp "$SCRIPT_PATH" "${SCRIPT_PATH}.bak"
-    
-    # Update the credentials in the script
+
     sed -i '' \
         -e "s|^API_KEY=\"\".*|API_KEY=\"$API_KEY\"      # Your Last.fm API key|" \
         -e "s|^API_SECRET=\"\".*|API_SECRET=\"$API_SECRET\"   # Your Last.fm API shared secret|" \
         -e "s|^SESSION_KEY=\"\".*|SESSION_KEY=\"$SESSION_KEY\"  # Your Last.fm session key|" \
         "$SCRIPT_PATH"
-    
+
     echo "Script updated with your credentials!"
     echo ""
     echo "Starting the scrobbler service..."
     launchctl unload ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist 2>/dev/null
     launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
     launchctl start com.user.apple_music_lastfm_scrobbler
-    
+
     echo ""
     echo "Done! Your Apple Music to Last.fm scrobbler should now be running."
     echo "You can check the logs with:"
