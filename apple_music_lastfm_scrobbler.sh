@@ -238,7 +238,7 @@ while true; do
         if [[ "$CURRENT_TITLE" != "$LAST_TITLE" || "$CURRENT_ARTIST" != "$LAST_ARTIST" ]]; then
             if [[ "$SCROBBLED" == "false" && -n "$LAST_TITLE" ]]; then
                 ELAPSED=$((NOW - TRACK_START_TIME))
-                THRESHOLD=$((LAST_DURATION / 2))
+                THRESHOLD=$((${LAST_DURATION%.*} / 2))
                 (( THRESHOLD > 240 )) && THRESHOLD=240
 
                 try_scrobble "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP" "$LAST_ALBUM" "$LAST_DURATION" "$ELAPSED" "$THRESHOLD" && SCROBBLED=true
@@ -247,7 +247,7 @@ while true; do
             LAST_TITLE="$CURRENT_TITLE"
             LAST_ARTIST="$CURRENT_ARTIST"
             LAST_ALBUM="$CURRENT_ALBUM"
-            LAST_DURATION=$((CURRENT_DURATION))
+            LAST_DURATION=${CURRENT_DURATION%.*}
             TRACK_START_TIME=$NOW
             TRACK_TIMESTAMP=$NOW
             SCROBBLED=false
@@ -255,7 +255,7 @@ while true; do
             log "INFO" "Now playing: $CURRENT_ARTIST - $CURRENT_TITLE"
         elif [[ "$SCROBBLED" == "false" ]]; then
             ELAPSED=$((NOW - TRACK_START_TIME))
-            THRESHOLD=$((CURRENT_DURATION / 2))
+            THRESHOLD=$((${CURRENT_DURATION%.*} / 2))
             (( THRESHOLD > 240 )) && THRESHOLD=240
             
             try_scrobble "$CURRENT_ARTIST" "$CURRENT_TITLE" "$TRACK_TIMESTAMP" "$CURRENT_ALBUM" "$CURRENT_DURATION" "$ELAPSED" "$THRESHOLD" && SCROBBLED=true
@@ -264,7 +264,7 @@ while true; do
         if [[ -n "$LAST_TITLE" && "$SCROBBLED" == "false" ]]; then
             NOW=$(date +%s)
             ELAPSED=$((NOW - TRACK_START_TIME))
-            THRESHOLD=$((LAST_DURATION / 2))
+            THRESHOLD=$((${LAST_DURATION%.*} / 2))
             (( THRESHOLD > 240 )) && THRESHOLD=240
 
             if ! try_scrobble "$LAST_ARTIST" "$LAST_TITLE" "$TRACK_TIMESTAMP" "$LAST_ALBUM" "$LAST_DURATION" "$ELAPSED" "$THRESHOLD"; then
