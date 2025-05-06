@@ -61,14 +61,40 @@ if [ "$CRED_STATUS" = "keychain" ]; then
 elif [ "$CRED_STATUS" = "script" ]; then
     echo "✅ Credentials found in script file."
 else
+    # Present a menu and invoke the corresponding setup script
     echo "You need to set up your Last.fm API credentials."
-    echo "Choose one of the following:"
-    echo "  1. Interactive (recommended): ./get_lastfm_session_key.sh"
-    echo "  2. Secure:                    ./secure_credentials.sh store"
-    echo "  3. Manual:                    ./update_scrobbler_credentials.sh"
+    echo "Choose one of the following by entering 1, 2, or 3:"
+    echo "  1. Interactive (recommended): Guided setup and get your session key"
+    echo "  2. Secure:                    Store API credentials securely in the macOS Keychain"
+    echo "  3. Manual:                    Paste your keys directly into the script"
     echo
-    echo "Follow prompts, then re-run this setup script if you change how credentials are stored."
-    read -p "Press Enter to continue once credentials are configured..."
+    while true; do
+        read -p "Enter 1, 2, or 3 and press Enter: " CRED_CHOICE
+        case "$CRED_CHOICE" in
+            1)
+                echo
+                echo "Launching interactive session key setup..."
+                ./get_lastfm_session_key.sh
+                break
+                ;;
+            2)
+                echo
+                echo "Launching secure credentials setup (Keychain)..."
+                ./secure_credentials.sh store
+                break
+                ;;
+            3)
+                echo
+                echo "Launching manual credentials updater..."
+                ./update_scrobbler_credentials.sh
+                break
+                ;;
+            *)
+                echo "Invalid choice. Please enter 1, 2, or 3."
+                ;;
+        esac
+    done
+    echo
 fi
 
 # 4. Make sure LaunchAgents and Log dirs exist
