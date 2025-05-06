@@ -6,33 +6,16 @@
     <string>com.user.apple_music_lastfm_scrobbler</string>
     <key>ProgramArguments</key>
     <array>
-        <string>bash</string>
-        <string>-c</string>
-        <!-- This script will try multiple possible locations for the scrobbler script -->
-        <string>
-        # Try the default location in HOME directory first
-        if [ -f "$HOME/apple_music_lastfm_scrobbler.sh" ]; then
-            "$HOME/apple_music_lastfm_scrobbler.sh"
-        # Then try the repository location if user kept it there
-        elif [ -f "$HOME/Documents/xcode/applemusic_macos_scrobbler/apple_music_lastfm_scrobbler.sh" ]; then
-            "$HOME/Documents/xcode/applemusic_macos_scrobbler/apple_music_lastfm_scrobbler.sh"
-        # Allow for custom locations based on where the user cloned the repo
-        elif [ -d "$HOME/github/applemusic_macos_scrobbler" ]; then
-            "$HOME/github/applemusic_macos_scrobbler/apple_music_lastfm_scrobbler.sh"
-        else
-            echo "Error: Could not find the scrobbler script. Please update the path in $HOME/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist"
-            exit 1
-        fi
-        </string>
+        <string>/Users/USERNAME/apple_music_lastfm_scrobbler.sh</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>~/Library/Logs/apple_music_lastfm_scrobbler.log</string>
+    <string>/Users/USERNAME/Library/Logs/apple_music_lastfm_scrobbler.log</string>
     <key>StandardErrorPath</key>
-    <string>~/Library/Logs/apple_music_lastfm_scrobbler.log</string>
+    <string>/Users/USERNAME/Library/Logs/apple_music_lastfm_scrobbler.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
@@ -40,4 +23,13 @@
     </dict>
 </dict>
 </plist>
+<!--
+INSTRUCTIONS:
+- Replace "USERNAME" with your macOS username in the paths above
+- Replace "/Users/USERNAME/apple_music_lastfm_scrobbler.sh" with the absolute path to your script if you placed it elsewhere
+- This saves logs to /Users/USERNAME/Library/Logs/apple_music_lastfm_scrobbler.log
+- Place this file at ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+- Load the service with: launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+- Unload the service with: launchctl unload ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+-->
 

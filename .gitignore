@@ -1,1 +1,6 @@
+# macOS and project-specific
+*.log
+*.bak
 .DS_Store
+.qodo
+/apple_music_lastfm_scrobbler_cache

@@ -6,6 +6,26 @@ SCRIPT_PATH="${SCRIPT_DIR}/apple_music_lastfm_scrobbler.sh"
 
 echo "==== Last.fm Session Key Generator ===="
 echo ""
+
+# New feature: Offer to open API application registration page
+read -p "Do you need to register a new Last.fm API application? (y/n) " NEED_API_APP
+if [[ "$NEED_API_APP" =~ ^[Yy]$ ]]; then
+    echo "Opening the Last.fm API application creation page in your browser..."
+    API_APP_URL="https://www.last.fm/api/account/create"
+    if command -v open >/dev/null 2>&1; then
+        open "$API_APP_URL"
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$API_APP_URL"
+    else
+        echo "Please open the following URL in your browser:"
+        echo "$API_APP_URL"
+    fi
+    echo ""
+    echo "After creating your application, you'll receive an API key and secret."
+    echo "You'll need these to continue with the setup."
+    echo ""
+fi
+
 read -p "Enter your Last.fm API key: " API_KEY
 read -p "Enter your Last.fm API secret: " API_SECRET
 
@@ -15,8 +35,19 @@ if [[ -z "$API_KEY" || -z "$API_SECRET" ]]; then
 fi
 
 echo ""
-echo "Step 1: Open this URL in your browser:"
-echo "https://www.last.fm/api/auth/?api_key=${API_KEY}&cb=http://localhost"
+AUTH_URL="https://www.last.fm/api/auth/?api_key=${API_KEY}&cb=http://localhost"
+echo "Step 1: Open this URL in your browser (it will open automatically):"
+echo "$AUTH_URL"
+
+# Attempt to launch in browser automatically (macOS and Linux compatible)
+if command -v open >/dev/null 2>&1; then
+    open "$AUTH_URL"
+elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$AUTH_URL"
+else
+    echo "Please open the URL above manually."
+fi
+
 echo ""
 echo "Step 2: Log in to Last.fm and authorize the app."
 echo "Step 3: After being redirected to localhost, copy the 'token' from the URL."
