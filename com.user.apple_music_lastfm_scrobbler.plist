@@ -6,12 +6,20 @@
     <string>com.user.apple_music_lastfm_scrobbler</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/USERNAME/apple_music_lastfm_scrobbler.sh</string>
+        <string>/Users/USERNAME/PATH/TO/apple_music_lastfm_scrobbler.sh</string>
     </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/USERNAME/PATH/TO/REPO</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
-    <true/>
+    <dict>
+        <key>PathState</key>
+        <dict>
+            <key>/Applications/Music.app</key>
+            <true/>
+        </dict>
+    </dict>
     <key>StandardOutPath</key>
     <string>/Users/USERNAME/Library/Logs/apple_music_lastfm_scrobbler.log</string>
     <key>StandardErrorPath</key>
@@ -25,11 +33,13 @@
 </plist>
 <!--
 INSTRUCTIONS:
-- Replace "USERNAME" with your macOS username in the paths above
-- Replace "/Users/USERNAME/apple_music_lastfm_scrobbler.sh" with the absolute path to your script if you placed it elsewhere
-- This saves logs to /Users/USERNAME/Library/Logs/apple_music_lastfm_scrobbler.log
-- Place this file at ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
-- Load the service with: launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
-- Unload the service with: launchctl unload ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+1. Copy this file to ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+2. Edit the file to replace:
+   - USERNAME with your macOS username
+   - PATH/TO/apple_music_lastfm_scrobbler.sh with the path to the script
+   - PATH/TO/REPO with the path to the repository directory
+3. Load the service: launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+4. Unload the service: launchctl unload ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
+5. Check logs at: ~/Library/Logs/apple_music_lastfm_scrobbler.log
 -->
 

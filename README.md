@@ -30,7 +30,7 @@ chmod +x setup_scrobbler.sh
 ./setup_scrobbler.sh
 ```
 
-Just follow the prompts. Once complete, the scrobbler will autostart with macOS login.
+Just follow the prompts. Once complete, the scrobbler will autostart with macOS login or, with the new plist, automatically start whenever you open the Apple Music app.
 
 > **Tip:** For most users, this is all you need!  
 > You can still follow the advanced/manual instructions below for greater control.
@@ -68,26 +68,24 @@ chmod +x ~/apple_music_lastfm_scrobbler.sh
 chmod +x ./apple_music_lastfm_scrobbler.sh
 ```
 
-3. **Install the launch agent:**
+3. **Install the launch agent to auto-start with Apple Music:**
 
-The launch agent makes the scrobbler start automatically when you log in:
+**New!** The scrobbler can be set to automatically start and stop in sync with Apple Music using the provided LaunchAgent plist.
 
-#### a. Edit the plist file
+#### a. Copy and edit the LaunchAgent plist
 
-Open `com.user.apple_music_lastfm_scrobbler.plist` in a text editor.
+Copy `com.user.apple_music_lastfm_scrobbler.plist` from this repo to your repository root (if needed), then edit the file to set the script and log paths to your user directory if different.
 
-- Change all `/Users/USERNAME/...` paths to match **your** user directory and the actual location of your `apple_music_lastfm_scrobbler.sh` script, e.g.:
-    - `/Users/yourname/apple_music_lastfm_scrobbler.sh`
-    - `/Users/yourname/Library/Logs/apple_music_lastfm_scrobbler.log`
-
-#### b. Install the plist
+#### b. Install the plist and load it
 
 ```bash
 mkdir -p ~/Library/LaunchAgents
 cp com.user.apple_music_lastfm_scrobbler.plist ~/Library/LaunchAgents/
+launchctl unload ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
 ```
 
-> **Note:** If you chose Option 2 in step 2, you'll need to ensure the plist file points to the correct script location in the repository.
+> **With this plist, the scrobbler will start automatically every time you open the Apple Music app and will stop when you quit Music.**
 
 ---
 
@@ -159,43 +157,37 @@ If you want to revert back to storing credentials in the script file, set `USE_K
 
 ---
 
-## 🔄 Start the Scrobbler
+## 🔄 Start / Reload the Scrobbler
 
-Once your credentials are set, start the service:
-
-```bash
-launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
-launchctl start com.user.apple_music_lastfm_scrobbler
-```
-
-To restart or reload:
-
+* With the new LaunchAgent, the scrobbler will start with Apple Music—no extra commands are required!
+* To manually reload:
 ```bash
 launchctl unload ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
 launchctl load ~/Library/LaunchAgents/com.user.apple_music_lastfm_scrobbler.plist
 ```
 
-## 🛠️ Troubleshooting: Common Fresh Clone Issues
+## 🛠️ Troubleshooting
 
-- **Service doesn't start?**
-    - Make sure the plist file is present at `~/Library/LaunchAgents`, has your correct username in all script/log paths, and is readable.
-    - Check the output of `log show --predicate 'process == "apple_music_lastfm_scrobbler.sh"' --info --last 1h` for details.
-    - Make sure your script is executable: `chmod +x ~/apple_music_lastfm_scrobbler.sh`.
+- **Scrobbler won't start?**
+    - Confirm the `.plist` file is present at `~/Library/LaunchAgents`, points to the correct username, script, and log paths.
+    - Ensure your scrobbler script is marked executable.
+    - Review logs in `~/Library/Logs/apple_music_lastfm_scrobbler.log`.
 
-- **No logs?**
-    - Confirm your log path in the plist and the script match, and are writable by you.
-
-- **Credentials not recognized?**
-    - Ensure you've followed the credential setup process described above—either via the helper scripts or Keychain.
+For additional credential setup, uninstall information, and further security tips, see remaining sections below.
 
 ## ✅ Quickstart after Clone
 
-1. Clone the repository and make the script executable.
-2. Edit the plist file with your correct username and paths.
-3. Install the plist to your LaunchAgents directory.
-4. Run either `./get_lastfm_session_key.sh`, `./update_scrobbler_credentials.sh`, or `./secure_credentials.sh store` to initialize credentials.
-5. Load the LaunchAgent as shown above.
-6. Play a track and check your log: `tail -f ~/Library/Logs/apple_music_lastfm_scrobbler.log`.
+1. Clone, make the script executable.
+2. Edit and install the LaunchAgent plist (new auto music-launch version!).
+3. Set up your Last.fm credentials.
+4. Load the LaunchAgent.
+5. Play a track in Apple Music, check logs to confirm scrobbling.
+
+---
+
+## ✨ Notes
+
+- **Advanced users:** The provided LaunchAgent can be further customized to support other logic; refer to Apple documentation for advanced plist keys.
 
 ---
 

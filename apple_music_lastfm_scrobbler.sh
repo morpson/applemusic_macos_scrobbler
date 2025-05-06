@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# Apple Music to Last.fm Scrobbler
-# ---------------------------------
-# See full instructions at the end of this file
+# Apple Music to Last.fm Scrobbler: Power-optimized and single-instance
+# ---------------------------------------------------------------------
+# - Exits cleanly if Apple Music is not running.
+# - Exits if Music quits during runtime.
+# - Uses a lockfile to prevent multiple background processes.
+# - Logs all events for easy debugging.
+# - (Further enhancement via launchd to auto-launch on Music start is recommended.)
 
 # ===== CONFIGURATION =====
 API_KEY=""      # Your Last.fm API key
@@ -11,6 +15,7 @@ SESSION_KEY=""  # Your Last.fm session key
 
 LOG_FILE="$HOME/Library/Logs/apple_music_lastfm_scrobbler.log"
 CACHE_FILE="$HOME/.apple_music_lastfm_scrobbler_cache"
+LOCK_FILE="/tmp/apple_music_lastfm_scrobbler.lock"
 POLL_INTERVAL=30  # Seconds between checking for track changes (can be adjusted)
 MIN_PLAY_TIME=30
 DEBUG=false
@@ -198,6 +203,7 @@ should_scrobble() {
 
 cleanup() {
     log "INFO" "Scrobbler shutting down"
+    rm -f "$LOCK_FILE"
     exit 0
 }
 
@@ -219,7 +225,21 @@ load_credentials_from_keychain() {
 }
 
 # ===== MAIN =====
-trap cleanup SIGINT SIGTERM
+
+# === Lockfile: only one instance allowed ===
+if [ -f "$LOCK_FILE" ]; then
+    OTHERPID=$(cat "$LOCK_FILE")
+    if [ -d "/proc/$OTHERPID" ] 2>/dev/null || ps -p "$OTHERPID" &>/dev/null; then
+        log "ERROR" "Another instance ($OTHERPID) already running. Exiting."
+        exit 1
+    else
+        log "WARNING" "Stale lock file found. Removing."
+        rm -f "$LOCK_FILE"
+    fi
+fi
+echo $$ > "$LOCK_FILE"
+trap cleanup SIGINT SIGTERM EXIT
+
 touch "$LOG_FILE" "$CACHE_FILE"
 tail -n 1000 "$CACHE_FILE" > "${CACHE_FILE}.tmp" && mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
 
@@ -230,7 +250,13 @@ log "INFO" "🎵 Apple Music Last.fm scrobbler started"
 if [[ "$USE_KEYCHAIN" == "true" ]]; then
     load_credentials_from_keychain || log "WARNING" "Failed to load from keychain, will use credentials from script"
 fi
-[[ -z "$API_KEY" || -z "$API_SECRET" || -z "$SESSION_KEY" ]] && log "ERROR" "API credentials missing" && exit 1
+[[ -z "$API_KEY" || -z "$API_SECRET" || -z "$SESSION_KEY" ]] && log "ERROR" "API credentials missing" && cleanup
+
+# ===== INITIAL CHECK: Exit if Music is not running =====
+if ! is_music_running; then
+    log "INFO" "Apple Music is not running. Exiting scrobbler."
+    cleanup
+fi
 
 while true; do
     if get_current_track; then
@@ -261,6 +287,12 @@ while true; do
             try_scrobble "$CURRENT_ARTIST" "$CURRENT_TITLE" "$TRACK_TIMESTAMP" "$CURRENT_ALBUM" "$CURRENT_DURATION" "$ELAPSED" "$THRESHOLD" && SCROBBLED=true
         fi
     else
+        # If Music is quit, exit immediately and clean up.
+        if ! is_music_running; then
+            log "INFO" "Apple Music has closed or is not running. Exiting scrobbler."
+            cleanup
+        fi
+        
         if [[ -n "$LAST_TITLE" && "$SCROBBLED" == "false" ]]; then
             NOW=$(date +%s)
             ELAPSED=$((NOW - TRACK_START_TIME))
@@ -279,3 +311,16 @@ while true; do
 
     sleep "$POLL_INTERVAL"
 done
+
+# ===== NOTES FOR FURTHER ENHANCEMENT =====
+# For best experience, configure the launchd .plist with keys:
+#   <key>KeepAlive</key>
+#   <dict>
+#      <key>OtherJobEnabled</key>
+#      <key>PathState</key>
+#      <dict>
+#         <key>/Applications/Music.app</key>
+#         <true/>
+#      </dict>
+#   </dict>
+# This will restart scrobbler only when Music.app is running!
